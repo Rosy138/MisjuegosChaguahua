@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama de Chaguagua</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #a8d0e6, #f76c6c);
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .game-container {
+            text-align: center;
+            background-color: #ffffffd9;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            max-width: 800px;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+        }
+        .chaguagua-container img {
+            width: 200px;
+            height: auto;
+            border-radius: 50%;
+            box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.4);
+        }
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 150px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .card {
+            width: 150px;
+            height: 150px;
+            background-color: #f76c6c;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .card img {
+            width: 100px;
+            height: 100px;
+            display: none;
+        }
+        .card.flipped img {
+            display: block;
+        }
+        .card.matched {
+            background-color: #4CAF50;
+        }
+        .score {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+        .timer {
+            font-size: 1.5em;
+            color: #FF4500;
+            margin-top: 20px;
+        }
+        .restart-btn, .home-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restart-btn:hover, .home-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Memorama de Chaguagua</h1>
+        <div class="chaguagua-container">
+            <img src="chaguagua.png" alt="Presentador Chaguagua">
+        </div>
+        <p>¡Haz coincidir las palabras en inglés!</p>
+        <div class="memory-game" id="memoryGame"></div>
+        <div class="score" id="score">Puntaje: 0</div>
+        <div class="timer" id="timer">Tiempo: 60</div>
+        <button class="restart-btn" id="restartBtn" onclick="restartGame()">Reiniciar Juego</button>
+        <button class="home-btn" id="homeBtn" onclick="goHome()">Volver al Inicio</button>
+    </div>
+
+    <script>
+        // Nuevas imágenes añadidas
+        const words = [
+            "Apple", "Dog", "Cat", "Car", "Fish", "Chaguagua", "Tree", "Dragon", "Book", "Ball",
+            "chagua1", "chagua2", "santa", "chinito"
+        ];
+        
+        let cards = [];
+        let flippedCards = [];
+        let matchedCards = [];
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createCards() {
+            const gameBoard = document.getElementById('memoryGame');
+            gameBoard.innerHTML = '';  // Limpiar el tablero antes de crear las cartas
+            let cardValues = [...words, ...words]; // Crear las cartas duplicadas
+            shuffle(cardValues); // Mezclar las cartas
+
+            cardValues.forEach(value => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.innerHTML = `  
+                    <img src="images/${value.toLowerCase()}.png" alt="${value}" />
+                `;
+                card.setAttribute('data-value', value);
+                card.addEventListener('click', () => flipCard(card));
+                gameBoard.appendChild(card);
+                cards.push(card);
+            });
+        }
+
+        function flipCard(card) {
+            if (flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                card.classList.add('flipped');
+                flippedCards.push(card);
+                if (flippedCards.length === 2) {
+                    checkMatch();
+                }
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            if (card1.getAttribute('data-value') === card2.getAttribute('data-value')) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                score++;
+                updateScore();
+                flippedCards = [];
+                if (matchedCards.length === cards.length / 2) {
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        document.getElementById('restartBtn').style.display = 'block';
+                        alert('¡Felicidades, has ganado!');
+                    }, 500);
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Puntaje: ${score}`;
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `Tiempo: ${timeLeft}`;
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        alert('¡Se acabó el tiempo!');
+                        document.getElementById('restartBtn').style.display = 'block';
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function restartGame() {
+            score = 0;
+            timeLeft = 60;
+            matchedCards = [];
+            flippedCards = [];
+            document.getElementById('score').textContent = `Puntaje: 0`;
+            document.getElementById('timer').textContent = `Tiempo: 60`;
+            document.getElementById('restartBtn').style.display = 'none';
+            createCards();
+            startTimer();
+        }
+
+        function goHome() {
+            window.location.href = "index162.html";
+        }
+
+        createCards();
+        startTimer();
+    </script>
+</body>
+</html>
